@@ -107,3 +107,10 @@ HITL (`H`) is required when:
 - Field order should follow canonical shape for stable parsing.
 - Unknown fields must be ignored unless policy disallows extensions.
 
+## 11. Reference Tooling (v1.0.0)
+
+- Parser: `tools/parse_aicl.py`
+- Validator: `tools/validate_aicl.py`
+- Strict validator mode: `--strict`
+- NL draft transpiler: `tools/transpile_nl_to_aicl.py`
+- Unified CLI: `tools/aicl_cli.py`

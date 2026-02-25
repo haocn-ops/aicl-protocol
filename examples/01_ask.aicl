@@ -1,0 +1,10 @@
+MSG{
+I:ASK
+O:dataset/customer_churn_q1
+C:deadline=2026-02-26T18:00+08;cost<=0.2
+K:[schema_known]
+U:[latest_label_source]
+Q:[who_owns_latest_labels?]
+X:reply<=120_tokens
+S:conf=0.81;ver=1.0;trace=ex_ask_001
+}

@@ -91,6 +91,8 @@ S:conf=0.61;ver=1.0;trace=trc_aicl_001
 - `ABNF.md`: textual grammar draft
 - `examples/`: ready-to-use message samples
 - `tools/validate_aicl.py`: minimal validator
+- `tools/parse_aicl.py`: AICL text to JSON parser
+- `tests/`: unittest suite for parser and validator
 
 ## Validation
 
@@ -98,4 +100,16 @@ Run the validator against examples:
 
 ```bash
 python3 tools/validate_aicl.py examples
+```
+
+Parse one AICL message into JSON:
+
+```bash
+python3 tools/parse_aicl.py --pretty examples/02_negotiate_hitl.aicl
+```
+
+Run tests:
+
+```bash
+python3 -m unittest discover -s tests -p 'test_*.py'
 ```

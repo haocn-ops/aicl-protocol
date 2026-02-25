@@ -1,12 +1,16 @@
 #!/usr/bin/env python3
-"""
-Minimal AICL v1.0 validator.
+"""AICL v1.0 validator.
 
-Checks:
+Base checks:
 - required fields (I, O, S)
 - intent membership
 - S field contains conf/ver/trace
 - conf range is 0..1
+
+Strict checks (enabled via --strict):
+- canonical field order
+- unknown field detection
+- high-risk COMMIT requires R and H
 """
 
 from __future__ import annotations
@@ -71,6 +75,9 @@ INTENTS = {
     "CLOSE",
 }
 
+KNOWN_FIELDS = ["A", "I", "O", "T", "G", "C", "K", "U", "P", "R", "Q", "D", "V", "M", "H", "X", "S"]
+KNOWN_FIELD_SET = set(KNOWN_FIELDS)
+
 
 @dataclass
 class ValidationError:
@@ -78,19 +85,22 @@ class ValidationError:
     message: str
 
 
-def parse_fields(text: str) -> dict[str, str]:
+def parse_fields(text: str) -> tuple[dict[str, str], list[str]]:
     match = re.search(r"MSG\s*\{(?P<body>.*)\}\s*$", text, flags=re.DOTALL)
     if not match:
-        return {}
+        return {}, []
     body = match.group("body")
     fields: dict[str, str] = {}
+    order: list[str] = []
     for line in body.splitlines():
         line = line.strip()
         if not line or ":" not in line:
             continue
         k, v = line.split(":", 1)
-        fields[k.strip()] = v.strip()
-    return fields
+        key = k.strip()
+        fields[key] = v.strip()
+        order.append(key)
+    return fields, order
 
 
 def parse_s_object(s_value: str) -> dict[str, str]:
@@ -111,9 +121,19 @@ def parse_s_object(s_value: str) -> dict[str, str]:
     return data
 
 
-def validate_text(text: str) -> list[ValidationError]:
+def _is_high_risk_commit(fields: dict[str, str]) -> bool:
+    return fields.get("I") == "COMMIT"
+
+
+def _field_order_valid(order: list[str]) -> bool:
+    # Canonical order means fields should appear in the same relative order.
+    ranks = [KNOWN_FIELDS.index(k) for k in order if k in KNOWN_FIELD_SET]
+    return ranks == sorted(ranks)
+
+
+def validate_text(text: str, strict: bool = False) -> list[ValidationError]:
     errs: list[ValidationError] = []
-    fields = parse_fields(text)
+    fields, order = parse_fields(text)
     if not fields:
         return [ValidationError("E001_MISSING_REQUIRED_FIELD", "Input is not a valid MSG{...} block.")]
 
@@ -138,12 +158,24 @@ def validate_text(text: str) -> list[ValidationError]:
             except ValueError:
                 errs.append(ValidationError("E003_INVALID_CONFIDENCE_RANGE", f"S.conf is not a number: {s_data['conf']}"))
 
+    if strict:
+        unknown = [k for k in order if k not in KNOWN_FIELD_SET]
+        if unknown:
+            errs.append(ValidationError("E002_INVALID_INTENT", f"Unknown field(s): {', '.join(unknown)}"))
+        if not _field_order_valid(order):
+            errs.append(ValidationError("E004_CONSTRAINT_CONFLICT", "Fields are not in canonical order."))
+        if _is_high_risk_commit(fields):
+            if "R" not in fields:
+                errs.append(ValidationError("E001_MISSING_REQUIRED_FIELD", "COMMIT in strict mode requires R field."))
+            if "H" not in fields:
+                errs.append(ValidationError("E205_HITL_REQUIRED_BUT_SKIPPED", "COMMIT in strict mode requires H field."))
+
     return errs
 
 
-def validate_file(path: Path) -> int:
+def validate_file(path: Path, strict: bool = False) -> int:
     text = path.read_text(encoding="utf-8")
-    errs = validate_text(text)
+    errs = validate_text(text, strict=strict)
     if errs:
         print(f"[FAIL] {path}")
         for err in errs:
@@ -156,6 +188,7 @@ def validate_file(path: Path) -> int:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Validate AICL message files.")
     parser.add_argument("paths", nargs="+", help="AICL files or directories")
+    parser.add_argument("--strict", action="store_true", help="Enable strict checks.")
     args = parser.parse_args()
 
     rc = 0
@@ -172,11 +205,10 @@ def main() -> int:
         return 1
 
     for file_path in all_files:
-        if validate_file(file_path) != 0:
+        if validate_file(file_path, strict=args.strict) != 0:
             rc = 1
     return rc
 
 
 if __name__ == "__main__":
     sys.exit(main())
-

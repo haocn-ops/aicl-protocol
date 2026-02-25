@@ -3,6 +3,8 @@
 AICL is a structured communication language for AI agents and human-agent collaboration.
 It prioritizes low ambiguity, high efficiency, and auditable decision flow.
 
+Status: `Final v1.0.0` (2026-02-25)
+
 ## Core Goals
 
 - Intent-first messaging
@@ -79,10 +81,7 @@ S:conf=0.61;ver=1.0;trace=trc_aicl_001
 
 ## Roadmap
 
-- ABNF grammar hardening
-- Reference validator
-- Natural-language to AICL transpiler
-- Multi-agent protocol test suite
+- Next: richer semantics and interoperability profiles
 
 ## Repository Structure
 
@@ -90,9 +89,12 @@ S:conf=0.61;ver=1.0;trace=trc_aicl_001
 - `SPEC.md`: full v1.0 draft specification
 - `ABNF.md`: textual grammar draft
 - `examples/`: ready-to-use message samples
-- `tools/validate_aicl.py`: minimal validator
+- `tools/validate_aicl.py`: validator (supports `--strict`)
 - `tools/parse_aicl.py`: AICL text to JSON parser
-- `tests/`: unittest suite for parser and validator
+- `tools/transpile_nl_to_aicl.py`: NL to AICL draft transpiler
+- `tools/aicl_cli.py`: unified CLI (`parse`, `validate`, `transpile`)
+- `tests/`: unittest suite
+- `FINAL_VERSION.md`: release summary
 
 ## Validation
 
@@ -100,12 +102,27 @@ Run the validator against examples:
 
 ```bash
 python3 tools/validate_aicl.py examples
+python3 tools/validate_aicl.py --strict examples
 ```
 
 Parse one AICL message into JSON:
 
 ```bash
 python3 tools/parse_aicl.py --pretty examples/02_negotiate_hitl.aicl
+```
+
+Transpile a natural language request to AICL draft:
+
+```bash
+python3 tools/transpile_nl_to_aicl.py "please summarize weekly incidents"
+```
+
+Use unified CLI:
+
+```bash
+python3 tools/aicl_cli.py parse --pretty examples/02_negotiate_hitl.aicl
+python3 tools/aicl_cli.py validate --strict examples
+python3 tools/aicl_cli.py transpile "verify policy compliance for release"
 ```
 
 Run tests:

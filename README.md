@@ -84,3 +84,8 @@ S:conf=0.61;ver=1.0;trace=trc_aicl_001
 - Natural-language to AICL transpiler
 - Multi-agent protocol test suite
 
+## Repository Structure
+
+- `README.md`: quick overview
+- `SPEC.md`: full v1.0 draft specification
+- `examples/`: ready-to-use message samples

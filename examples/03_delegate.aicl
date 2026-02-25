@@ -1,0 +1,10 @@
+MSG{
+A:{from=agent_orchestrator,to=[agent_data],role=planner}
+I:DELEGATE
+O:task/t100_data_pack
+T:{task_id=t100,parent_id=root,goal=launch_report_data,done_criteria=validated_table,priority=high,deps=[]}
+G:{assign_to=agent_data,capability_req=[data_fetch,cleaning],budget=0.15,deadline=2026-02-26T09:00+08,handoff_format=table+sources}
+C:policy=P1
+X:deliver=subtask_result_for_t100
+S:conf=0.83;ver=1.0;trace=ex_del_001
+}

@@ -3,6 +3,7 @@ from __future__ import annotations
 import unittest
 
 from tools.parse_aicl import parse_fields
+from tools.transpile_nl_to_aicl import transpile
 from tools.validate_aicl import validate_text
 
 
@@ -73,7 +74,39 @@ S:{conf=1.80,ver=1.0,trace=t1}
         codes = [e.code for e in errs]
         self.assertIn("E003_INVALID_CONFIDENCE_RANGE", codes)
 
+    def test_strict_commit_requires_risk_and_hitl(self) -> None:
+        text = """
+MSG{
+I:COMMIT
+O:release/r1
+S:{conf=0.82,ver=1.0,trace=t1}
+}
+"""
+        errs = validate_text(text, strict=True)
+        codes = [e.code for e in errs]
+        self.assertIn("E205_HITL_REQUIRED_BUT_SKIPPED", codes)
+        self.assertIn("E001_MISSING_REQUIRED_FIELD", codes)
+
+    def test_strict_unknown_field_detected(self) -> None:
+        text = """
+MSG{
+I:ASK
+O:task/t1
+Z:unknown
+S:{conf=0.80,ver=1.0,trace=t1}
+}
+"""
+        errs = validate_text(text, strict=True)
+        self.assertTrue(any("Unknown field(s)" in e.message for e in errs))
+
+
+class TranspileTests(unittest.TestCase):
+    def test_transpile_has_required_fields(self) -> None:
+        msg = transpile("please summarize weekly incidents")
+        self.assertIn("I:SUMMARIZE", msg)
+        self.assertIn("O:task/", msg)
+        self.assertIn("S:conf=", msg)
+
 
 if __name__ == "__main__":
     unittest.main()
-

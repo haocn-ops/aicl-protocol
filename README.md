@@ -88,4 +88,14 @@ S:conf=0.61;ver=1.0;trace=trc_aicl_001
 
 - `README.md`: quick overview
 - `SPEC.md`: full v1.0 draft specification
+- `ABNF.md`: textual grammar draft
 - `examples/`: ready-to-use message samples
+- `tools/validate_aicl.py`: minimal validator
+
+## Validation
+
+Run the validator against examples:
+
+```bash
+python3 tools/validate_aicl.py examples
+```

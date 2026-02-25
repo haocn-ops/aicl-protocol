@@ -1,9 +1,41 @@
 # AICL: Agent Intent Communication Language
 
+[![PyPI](https://img.shields.io/pypi/v/aicl)](https://pypi.org/project/aicl/)
+[![License](https://img.shields.io/github/license/haocn-ops/aicl-protocol)](LICENSE)
+
 AICL is a structured communication language for AI agents and human-agent collaboration.
 It prioritizes low ambiguity, high efficiency, and auditable decision flow.
 
+**🎮 Try it now**: [AICL Playground](https://haocn-ops.github.io/aicl-protocol/)
+
 Status: `Final v1.0.0` (2026-02-25)
+
+## Why AICL?
+
+Modern AI agents need to communicate with each other—and with humans. But existing protocols are either:
+- Too low-level (JSON, REST)
+- Too verbose (XML)
+- Not designed for agent autonomy
+
+AICL fills this gap with **intent-first**, **constraint-aware**, and **negotiation-native** messaging.
+
+## Quick Start
+
+```bash
+# 1. Install
+pip install aicl
+
+# 2. Parse an AICL message
+aicl parse examples/01_ask.aicl --pretty
+
+# 3. Validate messages
+aicl validate --strict examples/
+
+# 4. Transpile natural language to AICL
+aicl transpile "please verify policy compliance for release"
+```
+
+**Or use the online playground**: https://haocn-ops.github.io/aicl-protocol/
 
 ## Core Goals
 
@@ -78,6 +110,24 @@ X:need_human_choice_id
 S:conf=0.61;ver=1.0;trace=trc_aicl_001
 }
 ```
+
+## Compare with Other Protocols
+
+| Feature | AICL | OpenAI Agents SDK | MCP (Anthropic) | REST/JSON |
+|---------|------|-------------------|-----------------|-----------|
+| Intent-driven | ✅ | ❌ | ❌ | ❌ |
+| Built-in Negotiation | ✅ | ❌ | ❌ | ❌ |
+| HITL Safety Controls | ✅ | Partial | ❌ | ❌ |
+| Constraint Propagation | ✅ | ❌ | ❌ | ❌ |
+| Confidence Tracking | ✅ | ❌ | ❌ | ❌ |
+| Human-Readable | ✅ | ✅ | ✅ | ❌ |
+| Extensible | ✅ | ✅ | ✅ | ✅ |
+
+AICL is designed specifically for **multi-agent collaboration** with built-in support for:
+- Task delegation with capability matching
+- Risk-aware decision making
+- Human-in-the-loop approvals
+- Auditable trace logs
 
 ## Roadmap
 

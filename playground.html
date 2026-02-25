@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AICL Playground</title>
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+        }
+        .container {
+            display: flex;
+            gap: 20px;
+            height: 500px;
+        }
+        .panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .panel h3 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+        textarea {
+            flex: 1;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 13px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            resize: none;
+        }
+        textarea:focus {
+            outline: none;
+            border-color: #4a90d9;
+        }
+        .output {
+            flex: 1;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 13px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: #fafafa;
+            overflow: auto;
+            white-space: pre-wrap;
+        }
+        .output.success {
+            background: #e8f5e9;
+            border-color: #4caf50;
+        }
+        .output.error {
+            background: #ffebee;
+            border-color: #f44336;
+        }
+        .buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .btn-parse {
+            background: #4a90d9;
+            color: white;
+        }
+        .btn-parse:hover:not(:disabled) {
+            background: #357abd;
+        }
+        .btn-validate {
+            background: #4caf50;
+            color: white;
+        }
+        .btn-validate:hover:not(:disabled) {
+            background: #43a047;
+        }
+        .btn-strict {
+            background: #ff9800;
+            color: white;
+        }
+        .btn-strict:hover:not(:disabled) {
+            background: #f57c00;
+        }
+        .btn-clear {
+            background: #9e9e9e;
+            color: white;
+        }
+        .btn-clear:hover:not(:disabled) {
+            background: #757575;
+        }
+        .loading {
+            text-align: center;
+            color: #666;
+            padding: 20px;
+        }
+        .examples {
+            margin-top: 20px;
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .examples h3 {
+            margin: 0 0 10px 0;
+        }
+        .example-tags {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        .example-tag {
+            padding: 6px 12px;
+            background: #e3f2fd;
+            color: #1976d2;
+            border-radius: 16px;
+            cursor: pointer;
+            font-size: 13px;
+            border: none;
+        }
+        .example-tag:hover {
+            background: #bbdefb;
+        }
+        .status {
+            margin-top: 10px;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 13px;
+        }
+        .status.loading {
+            background: #fff3e0;
+            color: #e65100;
+        }
+        .status.ready {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #999;
+            font-size: 13px;
+        }
+        .footer a {
+            color: #4a90d9;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>🤖 AICL Playground</h1>
+    <p class="subtitle">Agent Intent Communication Language - Parse & Validate Online</p>
+    
+    <div class="status loading" id="status">Loading Python environment...</div>
+    
+    <div class="container">
+        <div class="panel">
+            <h3>Input (AICL Message)</h3>
+            <textarea id="input" placeholder="Enter your AICL message here...
+Example:
+MSG{
+I:ASK
+O:dataset/customer_churn
+C:deadline=2026-02-26T18:00+08
+S:conf=0.81;ver=1.0;trace=ex_001
+}"></textarea>
+        </div>
+        <div class="panel">
+            <h3>Output</h3>
+            <div class="output" id="output"></div>
+        </div>
+    </div>
+    
+    <div class="buttons">
+        <button class="btn-parse" id="btnParse" onclick="parse()" disabled>Parse → JSON</button>
+        <button class="btn-validate" id="btnValidate" onclick="validate(false)" disabled>Validate</button>
+        <button class="btn-strict" id="btnStrict" onclick="validate(true)" disabled>Validate (Strict)</button>
+        <button class="btn-clear" onclick="clearOutput()">Clear</button>
+    </div>
+    
+    <div class="examples">
+        <h3>Try an example:</h3>
+        <div class="example-tags">
+            <button class="example-tag" onclick="loadExample('ask')">ASK</button>
+            <button class="example-tag" onclick="loadExample('negotiate')">NEGOTIATE</button>
+            <button class="example-tag" onclick="loadExample('delegate')">DELEGATE</button>
+            <button class="example-tag" onclick="loadExample('commit')">COMMIT</button>
+            <button class="example-tag" onclick="loadExample('invalid')">Invalid Example</button>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <a href="https://github.com/haocn-ops/aicl-protocol" target="_blank">View on GitHub</a> | 
+        <a href="https://github.com/haocn-ops/aicl-protocol/blob/main/SPEC.md" target="_blank">Read Spec</a>
+    </div>
+
+    <script>
+        const examples = {
+            ask: `MSG{
+I:ASK
+O:dataset/customer_churn_q1
+C:deadline=2026-02-26T18:00+08;cost<=0.2
+K:[schema_known]
+U:[latest_label_source]
+Q:[who_owns_latest_labels?]
+X:reply<=120_tokens
+S:conf=0.81;ver=1.0;trace=ex_ask_001
+}`,
+            negotiate: `MSG{
+A:{from=agent_planner,to=[agent_risk],role=planner}
+I:NEGOTIATE
+O:release/2026Q1
+C:deadline=2026-02-26T12:00+08;policy=P1
+K:[data_ready,legal_partial]
+U:[final_legal_clause]
+P:[ship_with_guard_clause]
+R:[compliance_risk_if_unguarded]
+H:{required=true,trigger=policy_risk,question="Allow guarded release?",options=[allow,delay,reject],sla=2026-02-25T21:30+08,default_action=delay}
+X:need_human_choice_id
+S:conf=0.61;ver=1.0;trace=ex_neg_001
+}`,
+            delegate: `MSG{
+A:{from=agent_orchestrator,to=[agent_data],role=planner}
+I:DELEGATE
+O:task/t100_data_pack
+T:{task_id=t100,parent_id=root,goal=launch_report_data,done_criteria=validated_table,priority=high,deps=[]}
+G:{assign_to=agent_data,capability_req=[data_fetch,cleaning],budget=0.15,deadline=2026-02-26T09:00+08,handoff_format=table+sources}
+C:policy=P1
+X:deliver=subtask_result_for_t100
+S:conf=0.83;ver=1.0;trace=ex_del_001
+}`,
+            commit: `MSG{
+A:{from=agent_deploy,to=[agent_security],role=deployer}
+I:COMMIT
+O:deployment/prod-2026Q1
+C:policy=P1;deadline=2026-02-26T18:00+08
+K:[tests_passed,security_approved]
+P:[direct_deploy]
+R:[downtime_risk,rollback_available]
+H:{required=true,trigger=deployment_risk,question="Deploy to production?",options=[deploy,delay,cancel],sla=2026-02-25T22:00+08,default_action=delay}
+S:conf=0.92;ver=1.0;trace=ex_commit_001
+}`,
+            invalid: `MSG{
+I:INVALID_INTENT
+O:test
+S:conf=1.5;ver=1.0;trace=t1
+}`
+        };
+        
+        let pyodide = null;
+        
+        async function initPyodide() {
+            try {
+                pyodide = await loadPyodide();
+                
+                // Define the parser and validator in Python
+                await pyodide.runPythonAsync(`
+import re
+import json
+
+INTENTS = {
+    "ASK", "INFORM", "PLAN", "ACT", "VERIFY", "NEGOTIATE", "DELEGATE", 
+    "ACCEPT", "REJECT", "ESCALATE", "SUMMARIZE", "COMPARE", "ESTIMATE", 
+    "PRIORITIZE", "SCHEDULE", "BLOCK", "UNBLOCK", "REPLAN", "CANCEL", 
+    "PAUSE", "RESUME", "COMMIT", "ROLLBACK", "AUDIT", "TRACE", "CITE", 
+    "CLARIFY", "CONFIRM", "DISPUTE", "RESOLVE", "SPLIT", "MERGE", "ROUTE", 
+    "HANDOFF", "MONITOR", "ALERT", "REPORT", "DIAGNOSE", "FIX", "TEST", 
+    "VALIDATE", "SANITIZE", "FILTER", "TRANSFORM", "RETRIEVE", "SYNTHESIZE", 
+    "CRITIQUE", "JUSTIFY", "PREDICT", "CLOSE"
+}
+
+KNOWN_FIELDS = ["A", "I", "O", "T", "G", "C", "K", "U", "P", "R", "Q", "D", "V", "M", "H", "X", "S"]
+
+def split_top_level(text, sep):
+    parts = []
+    depth_brace = 0
+    depth_bracket = 0
+    in_quote = False
+    quote_char = ""
+    start = 0
+    
+    for i, ch in enumerate(text):
+        if in_quote:
+            if ch == quote_char:
+                in_quote = False
+            continue
+        if ch in ("'", '"'):
+            in_quote = True
+            quote_char = ch
+            continue
+        if ch == "{":
+            depth_brace += 1
+            continue
+        if ch == "}":
+            depth_brace -= 1
+            continue
+        if ch == "[":
+            depth_bracket += 1
+            continue
+        if ch == "]":
+            depth_bracket -= 1
+            continue
+        if ch == sep and depth_brace == 0 and depth_bracket == 0:
+            parts.append(text[start:i].strip())
+            start = i + 1
+    
+    parts.append(text[start:].strip())
+    return [p for p in parts if p]
+
+def parse_scalar(text):
+    raw = text.strip()
+    if len(raw) >= 2 and ((raw[0] == '"' and raw[-1] == '"') or (raw[0] == "'" and raw[-1] == "'")):
+        return raw[1:-1]
+    if raw.lower() == "true":
+        return True
+    if raw.lower() == "false":
+        return False
+    if re.fullmatch(r"-?\\d+", raw):
+        return int(raw)
+    if re.fullmatch(r"-?\\d+\\.\\d+", raw):
+        return float(raw)
+    return raw
+
+def parse_value(text):
+    raw = text.strip()
+    if raw.startswith("{") and raw.endswith("}"):
+        return parse_object(raw[1:-1].strip())
+    if raw.startswith("[") and raw.endswith("]"):
+        return parse_list(raw[1:-1].strip())
+    return parse_scalar(raw)
+
+def parse_list(text):
+    if not text:
+        return []
+    return [parse_value(item) for item in split_top_level(text, ",")]
+
+def parse_object(text):
+    if not text:
+        return {}
+    obj = {}
+    for pair in split_top_level(text, ","):
+        if "=" not in pair:
+            obj[pair] = True
+            continue
+        key, val = pair.split("=", 1)
+        obj[key.strip()] = parse_value(val)
+    return obj
+
+def parse_fields(text):
+    match = re.search(r"MSG\\s*\\{(?P<body>.*)\\}\\s*$", text, flags=re.DOTALL)
+    if not match:
+        raise ValueError("Input is not a valid MSG{...} block.")
+    body = match.group("body")
+    data = {}
+    for line in body.splitlines():
+        line = line.strip()
+        if not line or ":" not in line:
+            continue
+        key, value = line.split(":", 1)
+        key = key.strip()
+        raw_value = value.strip()
+        if key == "S" and not (raw_value.startswith("{") and raw_value.endswith("}")) and "=" in raw_value:
+            data[key] = parse_object(raw_value.replace(";", ","))
+        else:
+            data[key] = parse_value(raw_value)
+    return data
+
+def parse_s_object(s_value):
+    raw = s_value.strip()
+    if raw.startswith("{") and raw.endswith("}"):
+        raw = raw[1:-1]
+    raw = raw.replace(";", ",")
+    data = {}
+    for part in raw.split(","):
+        part = part.strip()
+        if "=" not in part:
+            continue
+        k, v = part.split("=", 1)
+        data[k.strip()] = v.strip()
+    return data
+
+def validate_message(text, strict=False):
+    errors = []
+    match = re.search(r"MSG\\s*\\{(?P<body>.*)\\}\\s*$", text, flags=re.DOTALL)
+    if not match:
+        return [{"code": "E001", "message": "Input is not a valid MSG{...} block."}]
+    
+    body = match.group("body")
+    fields = {}
+    order = []
+    for line in body.splitlines():
+        line = line.strip()
+        if not line or ":" not in line:
+            continue
+        k, v = line.split(":", 1)
+        key = k.strip()
+        fields[key] = v.strip()
+        order.append(key)
+    
+    if not fields:
+        return [{"code": "E001", "message": "No fields found in MSG block."}]
+    
+    # Required fields
+    for required in ("I", "O", "S"):
+        if required not in fields:
+            errors.append({"code": "E001_MISSING_REQUIRED_FIELD", "message": f"Missing required field: {required}"})
+    
+    # Intent validation
+    intent = fields.get("I")
+    if intent and intent not in INTENTS:
+        errors.append({"code": "E002_INVALID_INTENT", "message": f"Unknown intent: {intent}"})
+    
+    # S field validation
+    if "S" in fields:
+        s_data = parse_s_object(fields["S"])
+        for key in ("conf", "ver", "trace"):
+            if key not in s_data:
+                errors.append({"code": "E001_MISSING_REQUIRED_FIELD", "message": f"S missing key: {key}"})
+        if "conf" in s_data:
+            try:
+                conf = float(s_data["conf"])
+                if conf < 0.0 or conf > 1.0:
+                    errors.append({"code": "E003_INVALID_CONFIDENCE_RANGE", "message": f"S.conf out of range: {conf}"})
+            except ValueError:
+                errors.append({"code": "E003_INVALID_CONFIDENCE_RANGE", "message": f"S.conf is not a number: {s_data['conf']}"})
+    
+    # Strict mode
+    if strict:
+        unknown = [k for k in order if k not in KNOWN_FIELDS]
+        if unknown:
+            errors.append({"code": "E002_INVALID_INTENT", "message": f"Unknown field(s): {', '.join(unknown)}"})
+        
+        ranks = [KNOWN_FIELDS.index(k) for k in order if k in KNOWN_FIELDS]
+        if ranks != sorted(ranks):
+            errors.append({"code": "E004_CONSTRAINT_CONFLICT", "message": "Fields are not in canonical order."})
+        
+        if fields.get("I") == "COMMIT":
+            if "R" not in fields:
+                errors.append({"code": "E001_MISSING_REQUIRED_FIELD", "message": "COMMIT in strict mode requires R field."})
+            if "H" not in fields:
+                errors.append({"code": "E205_HITL_REQUIRED_BUT_SKIPPED", "message": "COMMIT in strict mode requires H field."})
+    
+    return errors
+`);
+                
+                document.getElementById('status').className = 'status ready';
+                document.getElementById('status').textContent = '✅ Ready! Python environment loaded.';
+                document.getElementById('btnParse').disabled = false;
+                document.getElementById('btnValidate').disabled = false;
+                document.getElementById('btnStrict').disabled = false;
+            } catch (err) {
+                document.getElementById('status').className = 'status error';
+                document.getElementById('status').textContent = '❌ Failed to load: ' + err.message;
+            }
+        }
+        
+        function parse() {
+            const input = document.getElementById('input').value;
+            const output = document.getElementById('output');
+            
+            if (!input.trim()) {
+                output.className = 'output error';
+                output.textContent = 'Please enter an AICL message.';
+                return;
+            }
+            
+            try {
+                const result = pyodide.runPython(`
+import json
+try:
+    result = parse_fields(${JSON.stringify(input)})
+    json.dumps(result, ensure_ascii=False, indent=2)
+except Exception as e:
+    raise Exception(str(e))
+`);
+                output.className = 'output success';
+                output.textContent = result;
+            } catch (err) {
+                output.className = 'output error';
+                output.textContent = 'Parse Error:\n' + err.message;
+            }
+        }
+        
+        function validate(strict = false) {
+            const input = document.getElementById('input').value;
+            const output = document.getElementById('output');
+            
+            if (!input.trim()) {
+                output.className = 'output error';
+                output.textContent = 'Please enter an AICL message.';
+                return;
+            }
+            
+            try {
+                const result = pyodide.runPython(`
+import json
+errors = validate_message(${JSON.stringify(input)}, strict=${strict})
+json.dumps(errors, ensure_ascii=False, indent=2)
+`);
+                const errors = JSON.parse(result);
+                
+                if (errors.length === 0) {
+                    output.className = 'output success';
+                    output.textContent = strict 
+                        ? '✅ Valid! (strict mode passed)' 
+                        : '✅ Valid!';
+                } else {
+                    output.className = 'output error';
+                    output.textContent = 'Validation Errors:\n' + 
+                        errors.map(e => `• [${e.code}] ${e.message}`).join('\n');
+                }
+            } catch (err) {
+                output.className = 'output error';
+                output.textContent = 'Validation Error:\n' + err.message;
+            }
+        }
+        
+        function clearOutput() {
+            document.getElementById('output').textContent = '';
+            document.getElementById('output').className = 'output';
+        }
+        
+        function loadExample(name) {
+            document.getElementById('input').value = examples[name];
+            clearOutput();
+        }
+        
+        // Initialize
+        initPyodide();
+    </script>
+</body>
+</html>

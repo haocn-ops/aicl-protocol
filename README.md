@@ -2,6 +2,8 @@
 
 [![PyPI](https://img.shields.io/pypi/v/aicl)](https://pypi.org/project/aicl/)
 [![License](https://img.shields.io/github/license/haocn-ops/aicl-protocol)](LICENSE)
+[![Python](https://img.shields.io/pypi/pyversions/aicl)](https://pypi.org/project/aicl/)
+[![GitHub Stars](https://img.shields.io/github/stars/haocn-ops/aicl-protocol)](https://github.com/haocn-ops/aicl-protocol/stargazers)
 
 AICL is a structured communication language for AI agents and human-agent collaboration.
 It prioritizes low ambiguity, high efficiency, and auditable decision flow.
